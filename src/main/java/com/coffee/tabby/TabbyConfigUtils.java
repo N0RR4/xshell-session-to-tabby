@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.setting.yaml.YamlUtil;
@@ -12,6 +13,8 @@ import com.coffee.entity.SshOptions;
 import org.yaml.snakeyaml.DumperOptions;
 
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,21 @@ import java.util.stream.Collectors;
 
 public class TabbyConfigUtils {
 
+    public static String getCurrentDir() {
+        try {
+            // 这种方法在普通JVM和native-image中都有效
+            Path path = Paths.get("").toAbsolutePath();
+            return path.toString();
+        } catch (Exception e) {
+            // 备用方案
+            return System.getProperty("user.dir");
+        }
+    }
+
+    public static String getWorkingDirectory() {
+        return System.getProperty("user.dir");
+    }
+
     public static String getTabbyConfigPath() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
@@ -37,7 +55,9 @@ public class TabbyConfigUtils {
 
     public  static void backConfig(String configPath) {
         long time = DateUtil.date().getTime();
-        String path = configPath + ".bak" + time;
+        String workingDirectory = TabbyConfigUtils.getWorkingDirectory();
+
+        String path = workingDirectory+ FileUtil.FILE_SEPARATOR + FileNameUtil.getName(configPath) +".bak" + time;
         System.out.println("正在备份Tabby配置文件到 :" + path);
         FileUtil.copy(configPath, path, true);
     }

@@ -45,6 +45,7 @@
             <artifactId>ini4j</artifactId>
             <version>0.5.4</version>
         </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>net.java.dev.jna</groupId>-->
 <!--            <artifactId>jna</artifactId>-->
@@ -52,4 +53,102 @@
 <!--        </dependency>-->
 
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <finalName>xshell-session-to-tabby</finalName>
+                    <!-- get all project dependencies -->
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <!-- MainClass in mainfest make a executable jar -->
+                    <archive>
+                        <manifest>
+                            <mainClass>com.coffee.Main</mainClass>
+                        </manifest>
+                    </archive>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <outputDirectory>${project.basedir}/target</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <!-- bind to the packaging phase -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>run-with-agent</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>-agentlib:native-image-agent=config-output-dir=target/native/agent-output</argument>
+                        <argument>-classpath</argument>
+                        <classpath />
+                        <argument>com.coffee.Main</argument> <!-- 替换为你的主类 -->
+                    </arguments>
+                </configuration>
+            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.graalvm.buildtools</groupId>-->
+<!--                <artifactId>native-maven-plugin</artifactId>-->
+<!--&lt;!&ndash;                <version>0.10.6</version>&ndash;&gt;-->
+<!--                <version>0.9.28</version>-->
+<!--                <configuration>-->
+<!--                    <mainClass>com.coffee.Main</mainClass> &lt;!&ndash; 指定主类 &ndash;&gt;-->
+<!--                    <imageName>xshell-session-to-tabby</imageName> &lt;!&ndash; 生成的可执行文件名 &ndash;&gt;-->
+<!--                    <buildArgs>-->
+<!--&lt;!&ndash;                        <arg>&#45;&#45;verbose</arg> &lt;!&ndash; 可选：启用详细日志 &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;                        <arg>&#45;&#45;no-fallback</arg> &lt;!&ndash; 禁止回退到 JVM 模式 &ndash;&gt;&ndash;&gt;-->
+<!--                        &lt;!&ndash; 加载 Agent 生成的配置 &ndash;&gt;-->
+<!--&lt;!&ndash;                        <arg>-H:ConfigurationFileDirectories=target/native/agent-output</arg>&ndash;&gt;-->
+<!--                    </buildArgs>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+            <plugin>
+                <groupId>org.graalvm.nativeimage</groupId>
+                <artifactId>native-image-maven-plugin</artifactId>
+                <version>21.2.0</version> <!-- 与 GraalVM 版本保持一致 -->
+                <executions>
+                    <execution>
+                        <id>native-image</id>
+                        <phase>package</phase> <!-- 确保绑定到 package 阶段 -->
+                        <goals>
+                            <goal>native-image</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <imageName>xshell-session-to-tabby</imageName>
+                    <buildArgs>
+                        --no-fallback
+                        --initialize-at-run-time="sun.security.x509,sun.security"
+                        --initialize-at-build-time=sun.security.x509.X509CertImpl
+                        --initialize-at-build-time=sun.security
+                        -H:ConfigurationFileDirectories=src/main/resources/native/agent-output
+                    </buildArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
