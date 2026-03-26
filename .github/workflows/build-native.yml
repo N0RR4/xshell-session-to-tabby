@@ -10,11 +10,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install GraalVM
+      - name: Install GraalVM Community
         uses: graalvm/setup-graalvm@v1
         with:
           version: '21.0.2'
-          distribution: 'community'
+          distribution: 'graalvm-community'
           java-version: '21'
 
       - name: Verify GraalVM
