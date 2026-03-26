@@ -16,26 +16,41 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download and Extract GraalVM
+      - name: Download GraalVM
         run: |
           $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-21.0.2/graalvm-community-jdk-21.0.2_windows-x64_bin.zip"
-          curl -L -o graalvm.zip $url
-          Expand-Archive -Path graalvm.zip -DestinationPath C:\ -Force
-          Remove-Item graalvm.zip
+          Write-Host "Downloading from: $url"
+          Invoke-WebRequest -Uri $url -OutFile graalvm.zip
+          $size = (Get-Item graalvm.zip).Length
+          Write-Host "Downloaded size: $size bytes"
+          if ($size -lt 1000000) {
+            Write-Host "File too small, might be error page"
+            Get-Content graalvm.zip | Select-Object -First 5
+          }
 
-      - name: Set GRAALVM_DIR
+      - name: Extract GraalVM
         run: |
-          $gdir = (Get-ChildItem C:\graalvm* | Select-Object -First 1).FullName
-          echo "GRAALVM_DIR=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Extracting to C:\..."
+          Expand-Archive -Path graalvm.zip -DestinationPath C:\ -Force
+          $items = Get-ChildItem C:\graalvm* -ErrorAction SilentlyContinue
+          Write-Host "Items found after extract:"
+          $items | ForEach-Object { Write-Host $_.FullName }
+          if ($items.Count -eq 0) {
+            Write-Host "ERROR: No graalvm directory found!"
+            Get-ChildItem C:\ | Select-Object -First 10
+          }
+          $gdir = $items[0].FullName
+          Add-Content -Path $env:GITHUB_ENV -Value "GRAALVM_DIR=$gdir"
+          Write-Host "GRAALVM_DIR set to: $gdir"
 
       - name: Install native-image
         run: |
           Write-Host "GRAALVM_DIR=$env:GRAALVM_DIR"
-          Write-Host "Contents:"
-          Get-ChildItem "$env:GRAALVM_DIR\bin\gu.exe" -ErrorAction SilentlyContinue
-          Get-ChildItem "$env:GRAALVM_DIR\bin\gu.cmd" -ErrorAction SilentlyContinue
-          Get-ChildItem "$env:GRAALVM_DIR" -ErrorAction SilentlyContinue | Select-Object Name
-          & "$env:GRAALVM_DIR\bin\gu.cmd" install native-image --no-verify
+          $guPath = Join-Path $env:GRAALVM_DIR "bin\gu.cmd"
+          Write-Host "gu.cmd path: $guPath"
+          Write-Host "Exists: $(Test-Path $guPath)"
+          Get-ChildItem "$env:GRAALVM_DIR\bin" | Select-Object Name | Format-Table -HideTableHeaders
+          & $guPath install native-image --no-verify
 
       - name: Build JAR
         run: mvn package -DskipTests -q
