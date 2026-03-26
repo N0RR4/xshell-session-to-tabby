@@ -18,11 +18,12 @@ jobs:
           java-version: '21'
 
       - name: Build JAR
-        run: mvn package -DskipTests -Dexec.skip=true -q
+        run: mvn package -DskipTests "-Dexec.skip=true"
+        shell: cmd
 
       - name: Build Native Image
         run: |
-          & "$env:GRAALVM_HOME\bin\native-image.cmd" -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
+          native-image -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
         shell: cmd
 
       - name: Upload exe
