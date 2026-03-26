@@ -10,23 +10,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
       - name: Install GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
           version: '21.0.2'
-          edition: 'community'
+          distribution: 'community'
           java-version: '17'
 
       - name: Verify GraalVM
         run: |
           Write-Host "GRAALVM_HOME: $env:GRAALVM_HOME"
-          Write-Host "JAVA_HOME: $env:JAVA_HOME"
           & gu version
           & native-image --version
 
