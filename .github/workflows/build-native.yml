@@ -16,25 +16,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install GraalVM
+      - name: Download GraalVM
         run: |
           $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-23.0.0/graalvm-community-jdk-23.0.0_windows-x64_bin.zip"
           curl -L -o graalvm.zip $url
-          Expand-Archive -Path graalvm.zip -DestinationPath C:\graalvm
+
+      - name: Extract GraalVM
+        run: |
+          Expand-Archive -Path graalvm.zip -DestinationPath C:\ -Force
           Remove-Item graalvm.zip
+          $gdir = (Get-ChildItem C:\graalvm* | Select-Object -First 1).FullName
+          echo "GRAALVM_HOME=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "GRAALVM_DIR=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Install native-image
         run: |
-          $env:PATH = "C:\graalvm\bin;$env:PATH"
-          & gu.cmd install native-image --no-verify
+          & "$env:GRAALVM_DIR\bin\gu.cmd" install native-image --no-verify
 
       - name: Build JAR
         run: mvn package -DskipTests -q
 
       - name: Build Native Image
         run: |
-          $env:PATH = "C:\graalvm\bin;$env:PATH"
-          native-image -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
+          & "$env:GRAALVM_DIR\bin\native-image.cmd" -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
         shell: cmd
 
       - name: Upload exe
