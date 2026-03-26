@@ -1,0 +1,44 @@
+name: Build Windows Native Exe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install GraalVM
+        run: |
+          $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-23.0.0/graalvm-ce-jdk-23.0.0_windows-x64_bin.zip"
+          curl -L -o graalvm.zip $url
+          Expand-Archive -Path graalvm.zip -DestinationPath C:\graalvm
+          Remove-Item graalvm.zip
+
+      - name: Install native-image
+        run: |
+          $env:PATH = "C:\graalvm\bin;$env:PATH"
+          & gu.cmd install native-image --no-verify
+
+      - name: Build JAR
+        run: mvn package -DskipTests -q
+
+      - name: Build Native Image
+        run: |
+          $env:PATH = "C:\graalvm\bin;$env:PATH"
+          native-image -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
+        shell: cmd
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: xshell-session-to-tabby-exe
+          path: xshell-session-to-tabby.exe
