@@ -45,6 +45,11 @@ public class TabbyConfigUtils {
     }
 
     public static String getTabbyConfigPath() {
+        // 支持通过系统属性自定义路径（由 Main.java 命令行参数 --tabby-config 设置）
+        String custom = System.getProperty("tabbyConfigPath");
+        if (StrUtil.isNotEmpty(custom)) {
+            return custom;
+        }
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
             return System.getenv("APPDATA") + "\\Tabby\\config.yaml";
