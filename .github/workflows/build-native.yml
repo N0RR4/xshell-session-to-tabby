@@ -16,48 +16,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download GraalVM
-        run: |
-          $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-21.0.2/graalvm-community-jdk-21.0.2_windows-x64_bin.zip"
-          Write-Host "Downloading from: $url"
-          Invoke-WebRequest -Uri $url -OutFile graalvm.zip
-          $size = (Get-Item graalvm.zip).Length
-          Write-Host "Downloaded size: $size bytes"
-          if ($size -lt 1000000) {
-            Write-Host "File too small, might be error page"
-            Get-Content graalvm.zip | Select-Object -First 5
-          }
+      - name: Install GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '21.0.2'
+          edition: 'community'
+          java-version: '17'
 
-      - name: Extract GraalVM
+      - name: Verify GraalVM
         run: |
-          Write-Host "Extracting to C:\..."
-          Expand-Archive -Path graalvm.zip -DestinationPath C:\ -Force
-          $items = Get-ChildItem C:\graalvm* -ErrorAction SilentlyContinue
-          Write-Host "Items found after extract:"
-          $items | ForEach-Object { Write-Host $_.FullName }
-          if ($items.Count -eq 0) {
-            Write-Host "ERROR: No graalvm directory found!"
-            Get-ChildItem C:\ | Select-Object -First 10
-          }
-          $gdir = $items[0].FullName
-          Add-Content -Path $env:GITHUB_ENV -Value "GRAALVM_DIR=$gdir"
-          Write-Host "GRAALVM_DIR set to: $gdir"
+          Write-Host "GRAALVM_HOME: $env:GRAALVM_HOME"
+          Write-Host "JAVA_HOME: $env:JAVA_HOME"
+          & gu version
+          & native-image --version
 
       - name: Install native-image
-        run: |
-          Write-Host "GRAALVM_DIR=$env:GRAALVM_DIR"
-          $guPath = Join-Path $env:GRAALVM_DIR "bin\gu.cmd"
-          Write-Host "gu.cmd path: $guPath"
-          Write-Host "Exists: $(Test-Path $guPath)"
-          Get-ChildItem "$env:GRAALVM_DIR\bin" | Select-Object Name | Format-Table -HideTableHeaders
-          & $guPath install native-image --no-verify
+        run: gu install native-image
 
       - name: Build JAR
         run: mvn package -DskipTests -q
 
       - name: Build Native Image
         run: |
-          & "$env:GRAALVM_DIR\bin\native-image.cmd" -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
+          native-image -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
         shell: cmd
 
       - name: Upload exe
