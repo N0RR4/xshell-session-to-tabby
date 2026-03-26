@@ -16,21 +16,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download GraalVM
+      - name: Download and Extract GraalVM
         run: |
-          $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-23.0.0/graalvm-community-jdk-23.0.0_windows-x64_bin.zip"
+          $url = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-21.0.2/graalvm-community-jdk-21.0.2_windows-x64_bin.zip"
           curl -L -o graalvm.zip $url
-
-      - name: Extract GraalVM
-        run: |
           Expand-Archive -Path graalvm.zip -DestinationPath C:\ -Force
           Remove-Item graalvm.zip
+
+      - name: Set GRAALVM_DIR
+        run: |
           $gdir = (Get-ChildItem C:\graalvm* | Select-Object -First 1).FullName
-          echo "GRAALVM_HOME=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "GRAALVM_DIR=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "GRAALVM_DIR=$gdir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install native-image
         run: |
+          Write-Host "GRAALVM_DIR=$env:GRAALVM_DIR"
+          Write-Host "Contents:"
+          Get-ChildItem "$env:GRAALVM_DIR\bin\gu.exe" -ErrorAction SilentlyContinue
+          Get-ChildItem "$env:GRAALVM_DIR\bin\gu.cmd" -ErrorAction SilentlyContinue
+          Get-ChildItem "$env:GRAALVM_DIR" -ErrorAction SilentlyContinue | Select-Object Name
           & "$env:GRAALVM_DIR\bin\gu.cmd" install native-image --no-verify
 
       - name: Build JAR
