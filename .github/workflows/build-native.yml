@@ -15,6 +15,7 @@ jobs:
         with:
           version: '21.0.2'
           distribution: 'native-image'
+          java-version: '17'
 
       - name: Verify GraalVM
         run: |
