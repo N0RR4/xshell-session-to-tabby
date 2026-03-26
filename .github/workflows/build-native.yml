@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install GraalVM Community
+      - name: Install GraalVM Community (native-image included in JDK 17+)
         uses: graalvm/setup-graalvm@v1
         with:
           version: '21.0.2'
@@ -19,19 +19,17 @@ jobs:
 
       - name: Verify GraalVM
         run: |
+          Write-Host "JAVA_HOME: $env:JAVA_HOME"
           Write-Host "GRAALVM_HOME: $env:GRAALVM_HOME"
-          & gu version
-          & native-image --version
-
-      - name: Install native-image
-        run: gu install native-image
+          & "$env:GRAALVM_HOME\bin\java.exe" -version
+          & "$env:GRAALVM_HOME\bin\native-image.cmd" --version
 
       - name: Build JAR
         run: mvn package -DskipTests -q
 
       - name: Build Native Image
         run: |
-          native-image -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
+          & "$env:GRAALVM_HOME\bin\native-image.cmd" -cp target/xshell-session-to-tabby.jar -H:Name=xshell-session-to-tabby --no-fallback -H:ConfigurationFileDirectories=src/main/resources/native/agent-output com.coffee.Main
         shell: cmd
 
       - name: Upload exe
