@@ -10,22 +10,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install GraalVM Community (native-image included in JDK 17+)
+      - name: Install GraalVM Community
         uses: graalvm/setup-graalvm@v1
         with:
           version: '21.0.2'
           distribution: 'graalvm-community'
           java-version: '21'
 
-      - name: Verify GraalVM
-        run: |
-          Write-Host "JAVA_HOME: $env:JAVA_HOME"
-          Write-Host "GRAALVM_HOME: $env:GRAALVM_HOME"
-          & "$env:GRAALVM_HOME\bin\java.exe" -version
-          & "$env:GRAALVM_HOME\bin\native-image.cmd" --version
-
       - name: Build JAR
-        run: mvn package -DskipTests -q
+        run: mvn package -DskipTests -Dexec.skip=true -q
 
       - name: Build Native Image
         run: |
